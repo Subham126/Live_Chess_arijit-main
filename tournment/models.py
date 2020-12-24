@@ -346,6 +346,7 @@ class Document(models.Model):
 	tournament = models.ForeignKey(Leave,on_delete=models.CASCADE,null=True)
 	rounds = models.CharField(max_length=125, null=True, blank=True)
 	games = models.CharField(max_length=125, null=True, blank=True)
+	loc = models.CharField(max_length=300, verbose_name="PGN File Location", null=True, blank=True)
 	docfile = models.FileField(_('PGN'),upload_to='profiles',null=True,help_text='upload image size less than 2.0MB')
 	objects = DocumentManager()
 

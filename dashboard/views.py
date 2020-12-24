@@ -873,12 +873,12 @@ def leaves_edit(request,id):
         form1 = PlayerCreationForm()
     formset = HeatFormSet(queryset=Heats.objects.filter(tournment=leave))
     # DocumentFormSet = formset_factory(DocumentForm, extra=1)
-    DocumentFormSet = modelformset_factory(Document, fields=['tournament', 'rounds', 'games',],
+    DocumentFormSet = modelformset_factory(Document, fields=['tournament', 'rounds', 'games', 'loc',],
                                            widgets={
                                                'rounds': forms.Select(choices=[("Round-" + str(i), "Round-" + str(i)) for i in range(1, (int(Leave.objects.get(pk=id).rounds) + 1))]),
                                                'games': forms.Select(choices=[(str(heat.player1) + "_vs_" + str(heat.player2), str(heat.player1) + "_vs_" + str(heat.player2))
-                                         for heat in Heats.objects.filter(tournment=id)])
-                                           },)
+                                                for heat in Heats.objects.filter(tournment=id)])
+                                            },)
     if document is not None:
         formset1 = DocumentFormSet(queryset=document)
         # formset1 = DocumentFormSet(request.POST or None, form_kwargs={'id': id})
@@ -900,7 +900,7 @@ def leaves_edit(request,id):
     dataset['formset1'] = formset1
     # dataset['form4'] = form4
 
-    dataset['title'] = 'Tournment Details'
+    dataset['title'] = 'Tournament Details'
     dataset['flag'] = 3
     return render(request, 'dashboard/create_player.html', dataset)
 
@@ -1188,6 +1188,7 @@ def uploadpgn(request):
     print("create uploadpgn view here")
     if request.method == 'POST':
         print(request.POST)
+        # TODO total no of form is not changing when a new form is added
         for i in range(int(20)):
             if "form-" + str(i) + "-id" in request.POST:
                 if request.POST["form-" + str(i) + "-id"] != "":
@@ -1195,10 +1196,22 @@ def uploadpgn(request):
                     document = Document.objects.get(pk=id)
                 else:
                     document = Document()
+                if request.POST["form-" + str(i) + "-loc"] == "":
+                    messages.error(request, 'Please Enter PGN File Location',
+                                   extra_tags='alert alert-danger alert-dismissible show')
+                    return redirect(request.META.get('HTTP_REFERER'))
+                else:
+                    if os.path.isfile(request.POST["form-" + str(i) + "-loc"]):
+                        pass
+                    else:
+                        messages.error(request, 'PGN File Location you entered is not a valid file location',
+                                       extra_tags='alert alert-danger alert-dismissible show')
+                        return redirect(request.META.get('HTTP_REFERER'))
                 if request.POST["form-" + str(i) + "-tournament"] != "":
                     document.tournament = Leave.objects.get(pk=request.POST["form-" + str(i) + "-tournament"])
                     document.rounds = request.POST["form-" + str(i) + "-rounds"]
                     document.games = request.POST["form-" + str(i) + "-games"]
+                    document.loc = request.POST["form-" + str(i) + "-loc"]
                     document.save()
                     file_name = request.user.username + "_" + request.POST["form-" + str(i) + "-games"]
                     print(file_name)
@@ -1206,9 +1219,9 @@ def uploadpgn(request):
                                 + request.POST["form-" + str(i) + "-rounds"] + "\\" + request.POST["form-" + str(i) + "-games"]
                     loc = settings.BASE_DIR +"\media\\" + file_path
                     Path(loc).mkdir(parents=True, exist_ok=True)
-                    fileitem = settings.BASE_DIR + "\media\documents\move1.pgn"
+                    fileitem = request.POST["form-" + str(i) + "-loc"]
+                    file_src = request.POST["form-" + str(i) + "-loc"]
                     # fileitem = request.FILES["form-" + str(i) + "-docfile"]
-                    file_src = "move1.pgn"
                     file_loc = loc + "\\" + file_name + ".pgn"
                     print(file_loc)
                     with open(fileitem) as source:
@@ -1216,8 +1229,7 @@ def uploadpgn(request):
                             for line in source:
                                 destination.write(line)
                     cron_job.start(loc, file_name, file_src)
-        messages.success(request, 'Pgn upload sucessfully', extra_tags='alert alert-success alert-dismissible show')
-        messages.success(request, 'Pgn upload sucessfully', extra_tags='alert alert-success alert-dismissible show')
+        messages.success(request, 'Pgn upload successfully', extra_tags='alert alert-success alert-dismissible show')
         return redirect(request.META.get('HTTP_REFERER'))
 
 from django.shortcuts import render

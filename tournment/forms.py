@@ -94,4 +94,4 @@ class HeatsCreationForm(forms.ModelForm):
 class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
-        fields = ['tournament', 'rounds', 'games',]
+        fields = ['tournament', 'rounds', 'games', 'loc',]

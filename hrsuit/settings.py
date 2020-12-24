@@ -74,7 +74,6 @@ INSTALLED_APPS = [
     'crispy_forms',
     'phonenumber_field',
     'widget_tweaks',
-    'django_cron',
 
     # PROJECT APPS
     'dashboard',
