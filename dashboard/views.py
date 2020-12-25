@@ -1084,9 +1084,26 @@ def user_dashboard(request):
 
 
 def dashboard_view_analysis(request,id):
-    heats = Document.objects.filter(pk=id)
     dataset1 = dict()
-    dataset1['heats'] = heats
+    item = {}
+    doc_list = []
+
+    document = get_object_or_404(Document, pk=id)
+    leave = get_object_or_404(Leave, id=int(document.tournament.id))
+    file_name = leave.user.username + "_" + document.games
+    file_loc = os.path.join(settings.BASE_DIR, 'media', (leave.user.username + "--" + leave.name),
+                            document.rounds, document.games, (file_name + ".pgn"))
+    item['id'] = document.id
+    item['tournament'] = document.tournament
+    item['round'] = document.rounds
+    x = document.games.split("_vs_")
+    item['player1'] = x[0]
+    item['player2'] = x[1]
+    doc_list.append(item)
+    with open(file_loc, 'r') as reader:
+        s = reader.read()
+    dataset1['content'] = [{'content': s}]
+    dataset1['heats'] = doc_list
     return render(request, 'app/dashboard1.html',dataset1)
 
 
@@ -1130,7 +1147,8 @@ def dashboard_view1(request,id):
     document = get_object_or_404(Document, pk=id)
     leave = get_object_or_404(Leave,id=int(document.tournament.id))
     file_name = leave.user.username + "_" + document.games
-    file_loc = os.path.join(settings.BASE_DIR, 'media', (leave.user.username + "--" + leave.name), document.rounds, document.games, (file_name + ".pgn"))
+    file_loc = os.path.join(settings.BASE_DIR, 'media', (leave.user.username + "--" + leave.name),
+                            document.rounds, document.games, (file_name + ".pgn"))
     item['id'] = document.id
     item['tournament'] = document.tournament
     item['round'] = document.rounds
@@ -1214,21 +1232,22 @@ def uploadpgn(request):
                     document.loc = request.POST["form-" + str(i) + "-loc"]
                     document.save()
                     file_name = request.user.username + "_" + request.POST["form-" + str(i) + "-games"]
-                    print(file_name)
-                    file_path = request.user.username + "--" + Leave.objects.get(pk=request.POST["form-" + str(i) + "-tournament"]).name + "\\"\
-                                + request.POST["form-" + str(i) + "-rounds"] + "\\" + request.POST["form-" + str(i) + "-games"]
-                    loc = settings.BASE_DIR +"\media\\" + file_path
+                    loc = os.path.join(settings.BASE_DIR, 'media', request.user.username
+                                            + "--" + Leave.objects.get(pk=request.POST["form-" + str(i)
+                                            + "-tournament"]).name, request.POST["form-" + str(i) + "-rounds"],
+                                            request.POST["form-" + str(i) + "-games"])
                     Path(loc).mkdir(parents=True, exist_ok=True)
                     fileitem = request.POST["form-" + str(i) + "-loc"]
-                    file_src = request.POST["form-" + str(i) + "-loc"]
-                    # fileitem = request.FILES["form-" + str(i) + "-docfile"]
-                    file_loc = loc + "\\" + file_name + ".pgn"
+                    file_loc = os.path.join(settings.BASE_DIR, 'media', request.user.username
+                                            + "--" + Leave.objects.get(pk=request.POST["form-" + str(i)
+                                            + "-tournament"]).name, request.POST["form-" + str(i) + "-rounds"],
+                                            request.POST["form-" + str(i) + "-games"], file_name + ".pgn")
                     print(file_loc)
                     with open(fileitem) as source:
                         with open(file_loc, "w") as destination:
                             for line in source:
                                 destination.write(line)
-                    cron_job.start(loc, file_name, file_src)
+                    cron_job.start(loc, file_name, fileitem)
         messages.success(request, 'Pgn upload successfully', extra_tags='alert alert-success alert-dismissible show')
         return redirect(request.META.get('HTTP_REFERER'))
 

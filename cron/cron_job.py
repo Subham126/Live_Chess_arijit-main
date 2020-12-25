@@ -18,8 +18,9 @@ def do(loc, file_name, file_src):
     print(orig_file_name)
     if os.path.exists(file_src):
         shutil.copy(file_src, loc)
-        src = loc + "\\" + orig_file_name
-        des = loc + "\\" + file_name + ".pgn"
+        src = os.path.join(loc, orig_file_name)
+        des = os.path.join(loc, file_name + ".pgn")
+        print(src, des)
         if os.path.exists(des):
             os.remove(des)
         os.rename(src, des)
