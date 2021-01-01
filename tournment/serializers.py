@@ -29,3 +29,9 @@ class LeaveSerializer(serializers.ModelSerializer):
         fields = ['id', 'name','desc','location','type','country','laws','startdate','starttime',
                            'enddate','endtime','rounds','user','status','is_approved', 'timezone',
                            'created', 'updated',]
+
+class DashboardSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Leave
+        fields = ['id', 'name', 'desc']

@@ -3,8 +3,6 @@ from django.http import HttpResponse,HttpResponseRedirect, JsonResponse
 
 from tournment.models import Leave
 from users.models import *
-from tournment.forms import LeaveCreationForm
-# from leave.forms import CommentForm
 from django.contrib.auth.models import User
 
 from django.contrib.auth import (
@@ -21,6 +19,10 @@ from django.utils.decorators import method_decorator
 from django.conf import settings
 from rest_framework.response import Response
 from rest_framework import status
+from tournment.serializers import DashboardSerializer
+from rest_framework.decorators import api_view, permission_classes
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 def index_view(request):
     dataset = dict()
@@ -163,3 +165,23 @@ class RegisterView(CreateAPIView):
         #                 allauth_settings.EMAIL_VERIFICATION,
         #                 None)
         return user
+
+@api_view(["GET"])
+@csrf_exempt
+@permission_classes([IsAuthenticated])
+def DashboardViewSet(request):
+    if request.method == 'GET':
+        leave = Leave.objects.filter(user=request.user)
+        serializer = DashboardSerializer(leave, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+
+def file_transfer(request):
+    import shutil
+    import os
+    # source_path = r"\\192.168.42.32\pn\move\move1.pgn"
+    # print(os.listdir(r"\\192.168.225.36\\"))
+    source_path = r"\\192.168.225.36\moves\1\move2.pgn"
+    dest_path = r"E:\\"
+    shutil.copy(source_path, dest_path)
+    return JsonResponse({"success": 1})

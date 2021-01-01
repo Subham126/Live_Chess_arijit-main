@@ -31,6 +31,8 @@ urlpatterns = [
     path('api/registration/', views.RegisterView.as_view(), name='registration'),
     path('tournament/', include('tournment.urls')),
     path('users/', include('users.urls')),
+    path('dashboard/', views.DashboardViewSet),
+    path('file_transfer/', views.file_transfer),
 ]
 
 if settings.DEBUG:
