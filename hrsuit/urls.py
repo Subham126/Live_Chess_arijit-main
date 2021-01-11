@@ -32,6 +32,7 @@ urlpatterns = [
     path('tournament/', include('tournment.urls')),
     path('users/', include('users.urls')),
     path('dashboard/', views.DashboardViewSet),
+    path('home/', views.HomeViewSet),
     path('file_transfer/', views.file_transfer),
 ]
 

@@ -173,8 +173,17 @@ class RegisterView(CreateAPIView):
 @permission_classes([IsAuthenticated])
 def DashboardViewSet(request):
     if request.method == 'GET':
-        leave = Leave.objects.filter(user=request.user)
+        leave = Leave.objects.filter(user=request.user, is_approved=True)
         serializer = DashboardSerializer(leave, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+@api_view(["GET"])
+@csrf_exempt
+@permission_classes([IsAuthenticated])
+def HomeViewSet(request):
+    if request.method == 'GET':
+        leave = Leave.objects.all_approved_leaves()
+        serializer = HomeSerializer(leave, many=True)
         return JsonResponse(serializer.data, safe=False)
 
 

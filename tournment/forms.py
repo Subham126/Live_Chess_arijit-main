@@ -53,4 +53,15 @@ class DocumentForm(forms.ModelForm):
 
     class Meta:
         model = Document
-        fields = ['rounds', 'games', 'loc']
+        fields = ['rounds', 'games', 'docfile']
+        error_messages = {
+            'rounds': {
+                'unique': _("This round has already been registered."),
+            },
+        }
+
+    def clean_rounds(self):
+        rounds = self.cleaned_data['rounds']
+        if Document.objects.filter(rounds=rounds).exists():
+            raise ValidationError("Round already exists")
+        return rounds

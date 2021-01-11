@@ -132,6 +132,7 @@ def user_profile_view(request):
 		return redirect('accounts:login')
 
 	user = request.user
+	employee = Employee.objects.filter(user = user).first()
 	dataset = dict()
 	dataset['user_detail'] = Details.objects.filter(user = user).first()
 	dataset['employee'] = Employee.objects.filter(user = user).first()

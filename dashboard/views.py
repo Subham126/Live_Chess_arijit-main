@@ -91,7 +91,8 @@ def dashboard_user_create(request):
         detail.bio = request.POST['bio']
         detail.gender = request.POST['gender']
         detail.contact = request.POST['contact']
-        detail.dob = request.POST['dob']
+        if request.POST['dob'] != "":
+            detail.dob = request.POST['dob']
         if 'image' in request.FILES:
             detail.image = request.FILES['image']
             # messages.error(request, 'Please upload',
@@ -679,15 +680,14 @@ def leaves_edit(request, id):
     leave = get_object_or_404(Leave, pk=id)
     HeatFormSet = inlineformset_factory(Leave, Heats, form=HeatsCreationForm, extra=1)
     PlayerFormSet = inlineformset_factory(Leave, Players, form=PlayerCreationForm, extra=1, max_num=1000)
-    DocumentFormSet = inlineformset_factory(Leave, Document, fields=['rounds', 'games', 'docfile', ], extra=1,
+    DocumentFormSet = inlineformset_factory(Leave, Document, form=DocumentForm, extra=1,
                                             widgets={
                                                'rounds': forms.Select(
                                                    choices=[("Round-" + str(i), "Round-" + str(i)) for i in
                                                             range(1, (int(Leave.objects.get(pk=id).rounds) + 1))]),
                                                'games': forms.Select(choices=[(str(heat.player1) + "_vs_" + str(
                                                    heat.player2), str(heat.player1) + "_vs_" + str(heat.player2))
-                                                                              for heat in
-                                                                              Heats.objects.filter(tournment=id)])
+                                                                              for heat in Heats.objects.filter(tournment=id)])
                                            })
 
     dataset = dict()
@@ -925,11 +925,17 @@ def dashboard_view1(request, id):
     x = document.games.split("_vs_")
     item['player1'] = x[0]
     item['player2'] = x[1]
+    if request.user == leave.user:
+        item['loc'] = document.loc
     doc_list.append(item)
-    with open(file_loc, 'r') as reader:
-        s = reader.read()
+    if os.path.isfile(file_loc):
+        with open(file_loc, 'r') as reader:
+            s = reader.read()
+    else:
+        s = ""
     dataset['content'] = [{'content': s}]
     dataset['document'] = doc_list
+    print(dataset)
     return render(request, 'app/dashboard.html', dataset)
 
 
@@ -979,10 +985,19 @@ def uploadpgn(request):
         messages.error(request, 'Buy Membership to avail this offer.',
                        extra_tags='alert alert-danger alert-dismissible show')
         return redirect('accounts:buymembership')
-
+    # form = DocumentForm(request.POST or None, request.FILES or None)
     if request.method == 'POST':
-        print(request.POST)
+        # if not form.is_valid():
+        #     return render(request, 'dashboard/create_player.html', {'form': form})
         for i in range(int(request.POST['document_set-TOTAL_FORMS'])):
+            if 'document_set-' + str(i) + '-id' in request.POST:
+                if 'document_set-' + str(i) + '-DELETE' in request.POST:
+                    if request.POST['document_set-' + str(i) + '-DELETE'] == 'on':
+                        if request.POST['document_set-' + str(i) + '-id'] != "":
+                            id = int(request.POST['document_set-' + str(i) + '-id'])
+                            if Document.objects.filter(id=id).exists():
+                                Document.objects.get(id=id).delete()
+                        continue
             if "document_set-" + str(i) + "-id" in request.POST:
                 if request.POST["document_set-" + str(i) + "-id"] != "":
                     id = request.POST["document_set-" + str(i) + "-id"]
@@ -1008,26 +1023,30 @@ def uploadpgn(request):
                 document.rounds = request.POST["document_set-" + str(i) + "-rounds"]
                 document.games = request.POST["document_set-" + str(i) + "-games"]
                 # document.loc = request.POST["document_set-" + str(i) + "-loc"]
-                document.docfile = request.FILES["document_set-" + str(i) + "-docfile"]
+                if "document_set-" + str(i) + "-docfile" in request.FILES:
+                    document.docfile = request.FILES["document_set-" + str(i) + "-docfile"]
+                print(document.docfile)
+                if not document.docfile:
+                    messages.error(request, 'Pgn not selected',
+                                     extra_tags='alert alert-danger alert-dismissible show')
+                    return redirect(request.META.get('HTTP_REFERER'))
                 document.save()
-                file_name = request.user.username + "_" + request.POST["document_set-" + str(i) + "-games"]
-                loc = os.path.join(settings.BASE_DIR, 'media', request.user.username
-                                + "--" + Leave.objects.get(pk=request.POST["document_set-" + str(i)
-                                + "-tournament"]).name, request.POST["document_set-" + str(i)
-                                + "-rounds"], request.POST["document_set-" + str(i) + "-games"])
+                file_name = request.user.username + "_" + document.games
+                loc = os.path.join(settings.BASE_DIR, 'media', request.user.username + "--"
+                                   + document.tournament.name, document.rounds, document.games)
                 Path(loc).mkdir(parents=True, exist_ok=True)
                 # fileitem = request.POST["document_set-" + str(i) + "-loc"]
-                fileitem = request.FILES["document_set-" + str(i) + "-docfile"]
+                fileitem = document.docfile
+                print(fileitem)
+                print(os.path.join(settings.MEDIA_ROOT, fileitem.name))
                 file_loc = os.path.join(settings.BASE_DIR, 'media', request.user.username
-                                    + "--" + Leave.objects.get(pk=request.POST["document_set-" + str(i)
-                                    + "-tournament"]).name, request.POST["document_set-" + str(i)
-                                    + "-rounds"], request.POST["document_set-" + str(i) + "-games"]
-                                    , file_name + ".pgn")
-                with fileitem as source:
+                                        + "--" + document.tournament.name, document.rounds,
+                                        document.games, file_name + ".pgn")
+                with open(os.path.join(settings.MEDIA_ROOT, fileitem.name), "rb") as source:
                     with open(file_loc, "wb") as destination:
                         for line in source:
                             destination.write(line)
-                cron_job.start(loc, file_name, fileitem)
+                # cron_job.start(loc, file_name, fileitem)
         messages.success(request, 'Pgn upload successfully', extra_tags='alert alert-success alert-dismissible show')
         return redirect(request.META.get('HTTP_REFERER'))
 
