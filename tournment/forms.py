@@ -50,6 +50,7 @@ class HeatsCreationForm(forms.ModelForm):
 
 
 class DocumentForm(forms.ModelForm):
+    docfile = forms.FileField(required=True, widget=forms.FileInput(attrs={'required': "required"}))
 
     class Meta:
         model = Document
