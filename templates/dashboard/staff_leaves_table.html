@@ -208,6 +208,12 @@
                             </a>
                         </td>
                         {% endif %}
+                        <td>
+                            <a href="{% url 'dashboard:userleavedelete' leave.id %}">
+							      	    DELETE
+							      	</a>
+
+                        </td>
                     </tr>
 
                     {% endfor %}

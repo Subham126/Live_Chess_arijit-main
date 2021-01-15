@@ -4800,7 +4800,7 @@ textarea.input-group-sm>.input-group-btn>.btn {
 .nav>li>a {
     position: relative;
     display: block;
-    padding: 10px 15px
+    padding: 10px 0px
 }
 
 .nav>li>a:focus,

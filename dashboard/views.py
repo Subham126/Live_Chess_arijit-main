@@ -660,10 +660,42 @@ def leaves_view(request, id):
 
     leave = get_object_or_404(Leave, id=id)
     employee = Employee.objects.filter(user=leave.user)[0]
-    print(employee)
     return render(request, 'dashboard/leave_detail_view.html', {'leave': leave, 'employee': employee,
                                                                 'title': '{0}-{1} leave'.format(leave.user.username,
                                                                                                 leave.status)})
+
+
+def leaves_delete(request, id):
+    if not request.user.is_authenticated:
+        return redirect('accounts:login')
+    if (request.user.employee.membership.level == 0) or (request.user.employee.membership.level == 2):
+        messages.error(request, 'Buy Membership to avail this offer.',
+                       extra_tags='alert alert-danger alert-dismissible show')
+        return redirect('accounts:buymembership')
+
+    leave = get_object_or_404(Leave, id=id)
+    employee = Employee.objects.filter(user=leave.user)[0]
+    return render(request, 'dashboard/leave_detail_delete_view.html', {'leave': leave, 'employee': employee,
+                                                                       'title': '{0}-{1} leave'.format(
+                                                                           leave.user.username, leave.status)})
+
+
+def tournament_delete(request, id):
+    if not request.user.is_authenticated:
+        return redirect('accounts:login')
+    if (request.user.employee.membership.level == 0) or (request.user.employee.membership.level == 2):
+        messages.error(request, 'Buy Membership to avail this offer.',
+                       extra_tags='alert alert-danger alert-dismissible show')
+        return redirect('accounts:buymembership')
+
+    if Leave.objects.filter(id=id).exists():
+        Leave.objects.get(id=id).delete()
+    else:
+        messages.error(request, 'Tournament does not exists.',
+                       extra_tags='alert alert-danger alert-dismissible show')
+        return redirect('dashboard:staffleavetable')
+    messages.success(request, 'Tournament deleted successfully.', extra_tags='alert alert-success alert-dismissible show')
+    return redirect('dashboard:staffleavetable')
 
 
 from django import forms
@@ -877,8 +909,11 @@ def dashboard_view_analysis(request, id):
     item['player1'] = x[0]
     item['player2'] = x[1]
     doc_list.append(item)
-    with open(file_loc, 'r') as reader:
-        s = reader.read()
+    if os.path.isfile(file_loc):
+        with open(file_loc, 'r') as reader:
+            s = reader.read()
+    else:
+        s = ""
     dataset1['content'] = [{'content': s}]
     dataset1['heats'] = doc_list
     dataset1['id'] = id
