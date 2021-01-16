@@ -703,6 +703,9 @@ from django.forms.models import inlineformset_factory
 
 
 def leaves_edit(request, id):
+    extra_heat = 1
+    extra_players = 1
+    extra_document = 1
     if not request.user.is_authenticated:
         return redirect('accounts:login')
     if (request.user.employee.membership.level == 0) or (request.user.employee.membership.level == 2):
@@ -710,9 +713,15 @@ def leaves_edit(request, id):
                        extra_tags='alert alert-danger alert-dismissible show')
         return redirect('accounts:buymembership')
     leave = get_object_or_404(Leave, pk=id)
-    HeatFormSet = inlineformset_factory(Leave, Heats, form=HeatsCreationForm, extra=1)
-    PlayerFormSet = inlineformset_factory(Leave, Players, form=PlayerCreationForm, extra=1, max_num=1000)
-    DocumentFormSet = inlineformset_factory(Leave, Document, form=DocumentForm, extra=1,
+    if Heats.objects.filter(tournment=leave).exists():
+        extra_heat = 0
+    if Players.objects.filter(tournment=leave).exists():
+        extra_players = 0
+    if Document.objects.filter(tournament=leave).exists():
+        extra_document = 0
+    HeatFormSet = inlineformset_factory(Leave, Heats, form=HeatsCreationForm, extra=extra_heat)
+    PlayerFormSet = inlineformset_factory(Leave, Players, form=PlayerCreationForm, extra=extra_players, max_num=1000)
+    DocumentFormSet = inlineformset_factory(Leave, Document, form=DocumentForm, extra=extra_document,
                                             widgets={
                                                'rounds': forms.Select(
                                                    choices=[("Round-" + str(i), "Round-" + str(i)) for i in
